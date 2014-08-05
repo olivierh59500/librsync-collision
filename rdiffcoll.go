@@ -24,7 +24,7 @@ type hash_and_input struct {
 	Input  uint64
 }
 
-func send_status(ch chan StatusMsg, msg string) {
+func send_status(ch chan<- StatusMsg, msg string) {
 	ch <- StatusMsg{time.Now(), msg}
 }
 
@@ -62,7 +62,7 @@ func rollsum(data []byte) uint32 {
 	return (A & 0xffff) | ((B & 0xffff) << 16)
 }
 
-func make_hashtable(inchan chan *hash_and_input, status_chan chan StatusMsg) map[truncated_hash]uint32 {
+func make_hashtable(inchan <-chan *hash_and_input, status_chan chan<- StatusMsg) map[truncated_hash]uint32 {
 	collision_map := make(map[truncated_hash]uint32, SPACE_WF/STORE_PROCS)
 	var count uint64
 
@@ -76,7 +76,7 @@ func make_hashtable(inchan chan *hash_and_input, status_chan chan StatusMsg) map
 	return collision_map
 }
 
-func test_for_collisions(collision_map map[truncated_hash]uint32, inchan chan *hash_and_input, statuschan chan StatusMsg, resultchan chan Result) {
+func test_for_collisions(collision_map map[truncated_hash]uint32, inchan <-chan *hash_and_input, statuschan chan<- StatusMsg, resultchan chan<- Result) {
 	var count uint64
 
 	for data := range inchan {
@@ -108,12 +108,12 @@ func generate_hashes(prefix []byte, start uint64, stop uint64, step uint64, out_
 	}
 }
 
-func start_storage_proc(store_chan chan *hash_and_input, test_chan chan *hash_and_input, status_chan chan StatusMsg, result_chan chan Result) {
+func start_storage_proc(store_chan <-chan *hash_and_input, test_chan <-chan *hash_and_input, status_chan chan<- StatusMsg, result_chan chan<- Result) {
 	table := make_hashtable(store_chan, status_chan)
 	test_for_collisions(table, test_chan, status_chan, result_chan)
 }
 
-func status_printer(status_chan chan StatusMsg, finished chan struct{}) {
+func status_printer(status_chan <-chan StatusMsg, finished chan<- struct{}) {
 	start_time := time.Now()
 	for msg := range status_chan {
 		fmt.Println(msg.Timestamp.Sub(start_time), msg.Message)
