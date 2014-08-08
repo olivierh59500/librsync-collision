@@ -13,15 +13,12 @@ const (
 )
 
 func main() {
-	var numCPU int = runtime.NumCPU()
-	var numThreads = numCPU
-
-	runtime.GOMAXPROCS(numCPU)
+	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	prefix1 := []byte(PREFIX1)
 	prefix2 := []byte(PREFIX2)
 
-	result, ok := Run(prefix1, prefix2, numThreads)
+	result, ok := Run(prefix1, prefix2)
 	if !ok {
 		return
 	}
@@ -32,7 +29,7 @@ func main() {
 		return
 	}
 	file1.Write(prefix1)
-	file1.Write(rollsum_expand(result.Input1))
+	file1.Write(rollsum_expand(result.Seed1))
 	file1.Close()
 
 	file2, err := os.Create("coll2.bin")
@@ -41,6 +38,6 @@ func main() {
 		return
 	}
 	file2.Write(prefix2)
-	file2.Write(rollsum_expand(result.Input2))
+	file2.Write(rollsum_expand(result.Seed2))
 	file2.Close()
 }
