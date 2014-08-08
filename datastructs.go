@@ -18,6 +18,6 @@ type hash_and_input struct {
 }
 
 type Candidate struct {
-	Bucket []uint64
+	Seed uint64
 	Hash   *hash_and_input
 }
