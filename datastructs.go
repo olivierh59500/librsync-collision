@@ -19,5 +19,5 @@ type hash_and_input struct {
 
 type Candidate struct {
 	Seed uint64
-	Hash   *hash_and_input
+	Hash *hash_and_input
 }

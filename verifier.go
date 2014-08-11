@@ -3,18 +3,15 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/therealmik/md4"
 )
 
 func verify_collisions(prefix []byte, verify_chan <-chan Candidate, result_chan chan<- Result) {
-	ctxtmpl := md4.New()
-	ctxtmpl.Write(prefix)
+	h := PrepareHash(prefix)
 
 	var count uint64
 	for candidate := range verify_chan {
-		ctx := ctxtmpl.Copy()
-		ctx.Write(rollsum_expand(candidate.Seed))
-		digest := truncate_hash(ctx.Sum(nil))
+		suffix := rollsum_expand(candidate.Seed)
+		digest := truncate_hash(h.Hash(suffix))
 		if bytes.Equal(digest, candidate.Hash.Digest) {
 			result_chan <- Result{candidate.Seed, candidate.Hash.Seed}
 		}
