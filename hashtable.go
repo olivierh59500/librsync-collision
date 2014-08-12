@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"math/rand"
+	"sort"
 )
 
 type HashTable struct {
@@ -30,6 +31,13 @@ type CompressedTable struct {
 	table  []byte
 }
 
+type FrequencyCount struct {
+	Count    uint32
+	Val      byte
+	CodeBits byte
+	CodeVal  byte
+}
+
 func (self *HashFunc) Sum(data []byte) []uint64 {
 	h := siphash.Hash(self.K0, self.K1, data)
 	ret := make([]uint64, 3)
@@ -46,6 +54,40 @@ func NewHashTable(num_buckets uint64) (table HashTable) {
 	table.table = make([]DigestSeedHash, num_buckets)
 	return table
 }
+
+func sortFrequencyCounts(counts []uint32) []FrequencyCount {
+	sorted := make([]FrequencyCount, len(counts))
+	for i, count := range counts {
+		sorted[i] = FrequencyCount{Count: count, Val: byte(i)}
+	}
+	sort.Sort(sort.Reverse(ByFrequency(sorted)))
+
+	var i uint32 = 0
+	for numBits := uint(1); ; numBits++ {
+		for val := uint(0); val < (1 << numBits); val++ {
+			if i >= uint32(len(sorted)) {
+				return sorted
+			}
+			sorted[i].CodeBits = byte(numBits)
+			sorted[i].CodeVal = byte(val)
+			i++
+		}
+	}
+}
+
+func num_compressed_bits(counts []FrequencyCount) uint64 {
+	var ret uint64
+	for _, count := range(counts) {
+		ret += (uint64(count.CodeBits) * uint64(count.Count) * 2)
+	}
+	return ret
+}
+
+type ByFrequency []FrequencyCount
+
+func (a ByFrequency) Len() int           { return len(a) }
+func (a ByFrequency) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByFrequency) Less(i, j int) bool { return a[i].Count < a[j].Count }
 
 func (self *HashTable) displace(val *DigestSeedHash, ttl int) bool {
 	if ttl <= 0 {
@@ -140,7 +182,8 @@ func make_hashtable(inchan <-chan *DigestSeed) CompressedTable {
 	}
 
 	<-TableBuildSem
-	send_status(fmt.Sprintf("Frequency Counts: %v", freqCounts))
+	sortedCounts := sortFrequencyCounts(freqCounts)
+	send_status(fmt.Sprintf("Approx compressed size: %v -- vs %v", num_compressed_bits(sortedCounts), NUM_BUCKETS * 8 * SEED_BYTES))
 
 	if _, err := tempfile.Seek(0, 0); err != nil {
 		panic("Unable to seek to the start of the tempfile")
