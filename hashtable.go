@@ -123,7 +123,7 @@ func make_hashtable(inchan <-chan *DigestSeed) CompressedTable {
 
 	for data := range inchan {
 		seed := encode_seed(data.Seed)
-		for _, x := range(seed) {
+		for _, x := range seed {
 			freqCounts[x]++
 		}
 
