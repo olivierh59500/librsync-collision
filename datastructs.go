@@ -12,12 +12,12 @@ type StatusMsg struct {
 	Message   string
 }
 
-type hash_and_input struct {
+type DigestSeed struct {
 	Digest []byte
 	Seed   uint64
 }
 
 type Candidate struct {
 	Seed uint64
-	Hash *hash_and_input
+	Hash *DigestSeed
 }

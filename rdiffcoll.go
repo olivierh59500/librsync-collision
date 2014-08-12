@@ -7,14 +7,15 @@ import (
 )
 
 var (
-	StatusChan chan StatusMsg
+	StatusChan    chan StatusMsg
+	TableBuildSem chan struct{}
 )
 
 func send_status(msg string) {
 	StatusChan <- StatusMsg{time.Now(), msg}
 }
 
-func start_storage_proc(store_chan <-chan *hash_and_input, test_chan <-chan *hash_and_input, verify_chan chan<- Candidate) {
+func start_storage_proc(store_chan <-chan *DigestSeed, test_chan <-chan *DigestSeed, verify_chan chan<- Candidate) {
 	table := make_hashtable(store_chan)
 	bucket_finder(table, test_chan, verify_chan)
 }
@@ -40,13 +41,18 @@ func Run(prefix1, prefix2 []byte) (*Result, bool) {
 	status_finished := make(chan struct{})
 	go status_printer(status_finished)
 
+	TableBuildSem = make(chan struct{}, SIMUL_TABLE_BUILDS)
+	for i = 0; i < SIMUL_TABLE_BUILDS; i++ {
+		TableBuildSem <- struct{}{}
+	}
+
 	result_chan := make(chan Result)
 	verify_chan := make(chan Candidate, (1 << 16))
-	store_chans := make([]chan *hash_and_input, STORE_PROCS)
-	test_chans := make([]chan *hash_and_input, STORE_PROCS)
+	store_chans := make([]chan *DigestSeed, STORE_PROCS)
+	test_chans := make([]chan *DigestSeed, STORE_PROCS)
 	for i = 0; i < STORE_PROCS; i++ {
-		store_ch := make(chan *hash_and_input, 1<<16)
-		test_ch := make(chan *hash_and_input, 1<<16)
+		store_ch := make(chan *DigestSeed, 1<<20)
+		test_ch := make(chan *DigestSeed, 1<<16)
 		store_chans[i] = store_ch
 		test_chans[i] = test_ch
 		go start_storage_proc(store_ch, test_ch, verify_chan)

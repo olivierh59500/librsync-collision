@@ -21,13 +21,13 @@ func (self *PreparedHash) Hash(data []byte) []byte {
 	return ctx.Sum(nil)
 }
 
-func generate_hashes(prefix []byte, start uint64, stop uint64, step uint64, out_chans []chan *hash_and_input, wg *sync.WaitGroup) {
+func generate_hashes(prefix []byte, start uint64, stop uint64, step uint64, out_chans []chan *DigestSeed, wg *sync.WaitGroup) {
 	h := PrepareHash(prefix)
 
 	for i := start; i < stop; i += step {
 		suffix := rollsum_expand(i)
 		digest := truncate_hash(h.Hash(suffix))
-		msg := &hash_and_input{Digest: digest, Seed: i}
+		msg := &DigestSeed{Digest: digest, Seed: i}
 		out_chans[int(digest[0])%STORE_PROCS] <- msg
 	}
 	if wg != nil {
