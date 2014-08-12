@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/gob"
 	"fmt"
 	"github.com/dchest/siphash"
 	"io"
@@ -22,13 +21,13 @@ type HashFunc struct {
 
 type DigestSeedHash struct {
 	Digest []byte
-	Seed   uint64
+	Seed   []byte
 	H      int
 }
 
 type CompressedTable struct {
 	hashes HashFunc
-	table  []uint32
+	table  []byte
 }
 
 func (self *HashFunc) Sum(data []byte) []uint64 {
@@ -72,19 +71,44 @@ func (self *HashTable) Insert(val *DigestSeedHash) bool {
 }
 
 func (self *HashTable) Compress() CompressedTable {
-	ret := CompressedTable{self.hashes, make([]uint32, len(self.table))}
+	ret := CompressedTable{self.hashes, make([]byte, len(self.table)*SEED_BYTES)}
 	for i := 0; i < len(self.table); i++ {
-		ret.table[i] = uint32(self.table[i].Seed)
+		if self.table[i].Seed != nil {
+			copy(ret.table[i*SEED_BYTES:], self.table[i].Seed)
+		}
 	}
 	return ret
 }
 
-func (self *CompressedTable) Get(key []byte) []uint32 {
-	ret := make([]uint32, 3)
+func (self *CompressedTable) Get(key []byte) []uint64 {
+	ret := make([]uint64, 3)
 	for i, h := range self.hashes.Sum(key) {
-		ret[i] = self.table[h]
+		start := h * SEED_BYTES
+		end := start + SEED_BYTES
+		ret[i] = decode_seed(self.table[start:end])
 	}
 	return ret
+}
+
+func read_from_tempfile(tempfile io.Reader, ch chan<- DigestSeedHash) {
+	defer close(ch)
+
+	for {
+		buf := make([]byte, HASH_TRUNC+SEED_BYTES)
+		var n int = 0
+		var err error
+		for n < HASH_TRUNC+SEED_BYTES && err == nil {
+			var m int
+			m, err = tempfile.Read(buf[n:])
+			n += m
+		}
+		if n == HASH_TRUNC+SEED_BYTES {
+			ch <- DigestSeedHash{Digest: buf[:HASH_TRUNC], Seed: buf[HASH_TRUNC:]}
+		}
+		if err != nil {
+			return
+		}
+	}
 }
 
 func make_hashtable(inchan <-chan *DigestSeed) CompressedTable {
@@ -95,33 +119,40 @@ func make_hashtable(inchan <-chan *DigestSeed) CompressedTable {
 
 	var count uint64
 
-	genc := gob.NewEncoder(tempfile)
+	freqCounts := make([]uint32, 256)
+
 	for data := range inchan {
-		genc.Encode(*data)
-		if count++; count&0xffffff == 0xffffff {
+		seed := encode_seed(data.Seed)
+		for _, x := range(seed) {
+			freqCounts[x]++
+		}
+
+		buf := make([]byte, HASH_TRUNC+SEED_BYTES)
+		copy(buf, data.Digest)
+		copy(buf[HASH_TRUNC:], seed)
+		if _, err := tempfile.Write(buf); err != nil {
+			panic("Unable to write to tempfile")
+		}
+
+		if count++; count&0xfffff == 0xfffff {
 			send_status(fmt.Sprintf("Collected %d hashes", count))
 		}
 	}
 
 	<-TableBuildSem
+	send_status(fmt.Sprintf("Frequency Counts: %v", freqCounts))
 
 	if _, err := tempfile.Seek(0, 0); err != nil {
 		panic("Unable to seek to the start of the tempfile")
 	}
 
 	htable := NewHashTable(NUM_BUCKETS)
-	gdec := gob.NewDecoder(tempfile)
 	count = 0
 	var collision_count uint64
-	for {
-		data := DigestSeedHash{}
-		if err := gdec.Decode(&data); err != nil {
-			if err == io.EOF {
-				break
-			} else {
-				panic(err)
-			}
-		}
+	ch := make(chan DigestSeedHash, (1 << 8))
+	go read_from_tempfile(tempfile, ch)
+
+	for data := range ch {
 		if ok := htable.Insert(&data); !ok {
 			collision_count += 1
 		}
@@ -137,7 +168,7 @@ func bucket_finder(htable CompressedTable, inchan <-chan *DigestSeed, verify_cha
 	TableBuildSem <- struct{}{}
 	for data := range inchan {
 		for _, seed := range htable.Get(data.Digest) {
-			verify_chan <- Candidate{uint64(seed), data}
+			verify_chan <- Candidate{seed, data}
 		}
 	}
 }

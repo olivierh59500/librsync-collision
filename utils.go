@@ -1,9 +1,5 @@
 package main
 
-import (
-	"hash/fnv"
-)
-
 func truncate_hash(input []byte) []byte {
 	return input[:HASH_TRUNC]
 }
@@ -34,8 +30,18 @@ func rollsum(data []byte) uint32 {
 	return (A & 0xffff) | ((B & 0xffff) << 16)
 }
 
-func hash(key []byte) uint32 {
-	ctx := fnv.New32a()
-	ctx.Write(key)
-	return ctx.Sum32() % NUM_BUCKETS
+func encode_seed(seed uint64) []byte {
+	ret := make([]byte, SEED_BYTES)
+	for i := uint(0); i < SEED_BYTES; i++ {
+		ret[i] = byte((seed >> (i * 8)) & 0xff)
+	}
+	return ret
+}
+
+func decode_seed(buf []byte) uint64 {
+	var seed uint64
+	for i, x := range buf {
+		seed |= uint64(x) << uint(i*8)
+	}
+	return seed
 }
