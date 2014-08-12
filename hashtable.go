@@ -88,8 +88,6 @@ func (self *CompressedTable) Get(key []byte) []uint32 {
 }
 
 func make_hashtable(inchan <-chan *DigestSeed) CompressedTable {
-	htable := NewHashTable(NUM_BUCKETS)
-
 	tempfile, err := ioutil.TempFile(".", "hashstorage")
 	if err != nil {
 		panic(err)
@@ -111,6 +109,7 @@ func make_hashtable(inchan <-chan *DigestSeed) CompressedTable {
 		panic("Unable to seek to the start of the tempfile")
 	}
 
+	htable := NewHashTable(NUM_BUCKETS)
 	gdec := gob.NewDecoder(tempfile)
 	count = 0
 	var collision_count uint64
