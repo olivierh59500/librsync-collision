@@ -181,9 +181,10 @@ func make_hashtable(inchan <-chan *DigestSeed) CompressedTable {
 		}
 	}
 
-	<-TableBuildSem
 	sortedCounts := sortFrequencyCounts(freqCounts)
 	send_status(fmt.Sprintf("Approx compressed/uncompressed size: %v / %v", num_compressed_bits(sortedCounts)/8, NUM_BUCKETS*SEED_BYTES))
+
+	<-TableBuildSem
 
 	if _, err := tempfile.Seek(0, 0); err != nil {
 		panic("Unable to seek to the start of the tempfile")
@@ -199,7 +200,7 @@ func make_hashtable(inchan <-chan *DigestSeed) CompressedTable {
 		if ok := htable.Insert(&data); !ok {
 			collision_count += 1
 		}
-		if count++; count&0xffffff == 0xffffff {
+		if count++; count&0xfffff == 0xfffff {
 			send_status(fmt.Sprintf("Inserted %d hashes", count))
 		}
 	}
