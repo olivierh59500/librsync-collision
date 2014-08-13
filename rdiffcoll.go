@@ -51,7 +51,7 @@ func Run(prefix1, prefix2 []byte) (*Result, bool) {
 	store_chans := make([]chan *DigestSeed, STORE_PROCS)
 	test_chans := make([]chan *DigestSeed, STORE_PROCS)
 	for i = 0; i < STORE_PROCS; i++ {
-		store_ch := make(chan *DigestSeed, 1<<20)
+		store_ch := make(chan *DigestSeed, 1<<16)
 		test_ch := make(chan *DigestSeed, 1<<16)
 		store_chans[i] = store_ch
 		test_chans[i] = test_ch
