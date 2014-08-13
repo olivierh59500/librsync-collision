@@ -77,7 +77,7 @@ func sortFrequencyCounts(counts []uint32) []FrequencyCount {
 
 func num_compressed_bits(counts []FrequencyCount) uint64 {
 	var ret uint64
-	for _, count := range(counts) {
+	for _, count := range counts {
 		ret += (uint64(count.CodeBits) * uint64(count.Count) * 2)
 	}
 	return ret
@@ -183,7 +183,7 @@ func make_hashtable(inchan <-chan *DigestSeed) CompressedTable {
 
 	<-TableBuildSem
 	sortedCounts := sortFrequencyCounts(freqCounts)
-	send_status(fmt.Sprintf("Approx compressed size: %v -- vs %v", num_compressed_bits(sortedCounts), NUM_BUCKETS * 8 * SEED_BYTES))
+	send_status(fmt.Sprintf("Approx compressed/uncompressed size: %v / %v", num_compressed_bits(sortedCounts)/8, NUM_BUCKETS*SEED_BYTES))
 
 	if _, err := tempfile.Seek(0, 0); err != nil {
 		panic("Unable to seek to the start of the tempfile")
