@@ -46,7 +46,7 @@ func (self *HashTable) GetCompressedSize() (uint64, uint32) {
 	for _, x := range self.table {
 		freqCounts[x]++
 	}
-	cs := NewCompressedSequence(freqCounts)
+	cs := NewCompressor(freqCounts)
 
 	minSize := uint64(0xffffffffffffffff)
 	bestT := uint32(0)

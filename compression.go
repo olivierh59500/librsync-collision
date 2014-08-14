@@ -4,7 +4,7 @@ import (
 	"sort"
 )
 
-type CompressedSequence struct {
+type Compressor struct {
 	FreqCounts []FrequencyCount
 	TScale     uint32
 }
@@ -16,7 +16,7 @@ type FrequencyCount struct {
 	CodeVal  uint32
 }
 
-func NewCompressedSequence(freqCounts []uint32) (cs CompressedSequence) {
+func NewCompressor(freqCounts []uint32) (cs Compressor) {
 	cs.FreqCounts = make([]FrequencyCount, len(freqCounts))
 
 	for i, count := range freqCounts {
@@ -26,7 +26,7 @@ func NewCompressedSequence(freqCounts []uint32) (cs CompressedSequence) {
 	return
 }
 
-func (self *CompressedSequence) AssignCodes(tScale uint32) {
+func (self *Compressor) AssignCodes(tScale uint32) {
 	var i uint32 = 0
 	self.TScale = tScale
 	for numBits := tScale; ; numBits += tScale {
@@ -41,7 +41,7 @@ func (self *CompressedSequence) AssignCodes(tScale uint32) {
 	}
 }
 
-func (self CompressedSequence) EstimateSize() uint64 {
+func (self Compressor) EstimateSize() uint64 {
 	var ret uint64
 	for _, count := range self.FreqCounts {
 		codeSize := uint64(count.CodeBits) * uint64(count.Count)
