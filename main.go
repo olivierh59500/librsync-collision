@@ -15,13 +15,6 @@ const (
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	for i := uint64(0); i < 27; i++ {
-		t := uint64(1<<i) + i
-		if decode_seed(encode_seed(t)) != t {
-			panic("Seeds don't match")
-		}
-	}
-
 	prefix1 := []byte(PREFIX1)
 	prefix2 := []byte(PREFIX2)
 
