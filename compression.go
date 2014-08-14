@@ -47,7 +47,7 @@ func (self Compressor) EstimateSize() uint64 {
 		codeSize := uint64(count.CodeBits) * uint64(count.Count)
 		ret += codeSize + (codeSize / uint64(self.TScale))
 	}
-	return (ret + 7) / 8
+	return (ret + 31) / 32 * 4
 }
 
 type ByFrequency []FrequencyCount
@@ -55,3 +55,20 @@ type ByFrequency []FrequencyCount
 func (a ByFrequency) Len() int           { return len(a) }
 func (a ByFrequency) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByFrequency) Less(i, j int) bool { return a[i].Count < a[j].Count }
+
+type CompressedTable struct {
+	Codes      BitVector
+	Delimiters SelectVector
+	TScale     uint32
+}
+
+func (self CompressedTable) GetBytes(offset uint32, numBytes uint32) []byte {
+	ret := make([]byte, numBytes)
+
+	for i := uint32(0); i < numBytes; i++ {
+		bitStart := self.Delimiters.Select(offset + i)
+		bitEnd := self.Delimiters.Select(offset + i + 1)
+		ret[i] = byte(self.Codes.Get(bitStart, bitEnd))
+	}
+	return ret
+}

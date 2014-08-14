@@ -1,18 +1,26 @@
 package main
 
 type BitVector struct {
-	vec    []uint64
+	vec []uint32
+}
+
+func (self BitVector) Get(start uint32, end uint32) uint32 {
+	panic("TODO")
+}
+
+type SelectVector struct {
+	vec    []uint32
 	counts []uint8
 }
 
-func (self *BitVector) SetBit(n uint64) {
-	wordNum := n / 64
-	bitNum := n % 64
-	bitMask := uint64(1 << bitNum)
+func (self *SelectVector) SetBit(n uint32) {
+	wordNum := n / 32
+	bitNum := n % 32
+	bitMask := uint32(1 << bitNum)
 
-	if wordNum >= uint64(len(self.vec)) {
+	if wordNum >= uint32(len(self.vec)) {
 		oldVec := self.vec
-		self.vec = make([]uint64, wordNum+1)
+		self.vec = make([]uint32, wordNum+1)
 		copy(self.vec, oldVec)
 		oldCounts := self.counts
 		self.counts = make([]uint8, wordNum+1)
@@ -24,14 +32,14 @@ func (self *BitVector) SetBit(n uint64) {
 	self.vec[wordNum] |= bitMask
 }
 
-func (self *BitVector) Rank(n uint64) uint64 {
-	wordNum := n / 64
-	bitNum := n % 64
-	var i uint64
-	var count uint64
+func (self *SelectVector) Rank(n uint32) uint32 {
+	wordNum := n / 32
+	bitNum := n % 32
+	var i uint32
+	var count uint32
 
 	for i = 0; i < wordNum; i++ {
-		count += uint64(self.counts[i])
+		count += uint32(self.counts[i])
 	}
 
 	word := self.vec[wordNum]
@@ -41,9 +49,9 @@ func (self *BitVector) Rank(n uint64) uint64 {
 	return count
 }
 
-func (self *BitVector) Select(n uint64) uint64 {
-	var count uint64
-	var wordNum uint64
+func (self *SelectVector) Select(n uint32) uint32 {
+	var count uint32
+	var wordNum uint32
 	for {
 		if self.vec[wordNum]+count >= n {
 			break
@@ -54,9 +62,9 @@ func (self *BitVector) Select(n uint64) uint64 {
 	wordNum++
 
 	lastWord := self.vec[wordNum]
-	var i uint64
+	var i uint32
 	for i = 0; count < n; i++ {
 		count += (lastWord >> i) & 1
 	}
-	return i + (wordNum * 64)
+	return i + (wordNum * 32)
 }
