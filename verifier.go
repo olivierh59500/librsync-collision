@@ -15,7 +15,7 @@ func verify_collisions(prefix []byte, verify_chan <-chan Candidate, result_chan 
 		if bytes.Equal(digest, candidate.Hash.Digest) {
 			result_chan <- Result{candidate.Seed, candidate.Hash.Seed}
 		}
-		if count++; count&0xfffff == 0xfffff {
+		if count++; count%REPORT_INTERVAL == 0 {
 			send_status(fmt.Sprintf("Tested %d hashes", count))
 		}
 	}

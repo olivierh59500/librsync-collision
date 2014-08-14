@@ -73,7 +73,7 @@ func make_hashtable(inchan <-chan *DigestSeed) HashTable {
 
 	for data := range inchan {
 		htable.Insert(data)
-		if count++; count&0xfffff == 0xfffff {
+		if count++; count%REPORT_INTERVAL == 0 {
 			send_status(fmt.Sprintf("Collected %d hashes", count))
 		}
 	}
