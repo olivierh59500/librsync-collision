@@ -7,8 +7,7 @@ import (
 )
 
 var (
-	StatusChan    chan StatusMsg
-	TableBuildSem chan struct{}
+	StatusChan chan StatusMsg
 )
 
 func send_status(msg string) {
@@ -40,11 +39,6 @@ func Run(prefix1, prefix2 []byte) (*Result, bool) {
 	StatusChan = make(chan StatusMsg, 16)
 	status_finished := make(chan struct{})
 	go status_printer(status_finished)
-
-	TableBuildSem = make(chan struct{}, SIMUL_TABLE_BUILDS)
-	for i = 0; i < SIMUL_TABLE_BUILDS; i++ {
-		TableBuildSem <- struct{}{}
-	}
 
 	result_chan := make(chan Result)
 	verify_chan := make(chan Candidate, (1 << 16))
