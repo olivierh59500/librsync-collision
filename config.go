@@ -7,7 +7,7 @@ const (
 	STORE_PROCS     = 16
 	GENERATE_PROCS  = 6
 	VERIFY_PROCS    = 6
-	NUM_BUCKETS     = (SPACE_WF / STORE_PROCS * 5 / 4)
+	NUM_BUCKETS     = (SPACE_WF / STORE_PROCS) // Keep the table dense, even if we lose some keys
 	SEED_BYTES      = 4
 	REPORT_INTERVAL = (SPACE_WF / STORE_PROCS / 32) // Keep this a power of 2 if possible
 )
