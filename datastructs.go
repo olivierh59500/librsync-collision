@@ -3,8 +3,8 @@ package main
 import "time"
 
 type Result struct {
-	Seed1 uint64
-	Seed2 uint64
+	Plaintext1 []byte
+	Plaintext2 []byte
 }
 
 type StatusMsg struct {
@@ -13,11 +13,11 @@ type StatusMsg struct {
 }
 
 type DigestSeed struct {
-	Digest []byte
+	Digest [HASH_TRUNC]byte
 	Seed   uint64
 }
 
 type Candidate struct {
 	Seed uint64
-	Hash *DigestSeed
+	Hash DigestSeed
 }

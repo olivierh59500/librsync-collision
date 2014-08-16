@@ -1,15 +1,18 @@
 package main
 
-func truncate_hash(input []byte) []byte {
-	return input[:HASH_TRUNC]
+func truncate_hash(input []byte) (ret [HASH_TRUNC]byte) {
+	for i, x := range input[:HASH_TRUNC] {
+		ret[i] = x
+	}
+	return
 }
 
-func rollsum_expand(n uint64) []byte {
-	ret := make([]byte, 20)
+func rollsum_encode(data [HASH_TRUNC]byte) []byte {
+	ret := make([]byte, HASH_TRUNC*4)
 	var i uint
 
-	for i = 0; i < 5; i++ {
-		b := byte((n >> (i * 8)) & 0xff)
+	for i = 0; i < HASH_TRUNC; i++ {
+		b := data[i]
 		c := 255 - b
 		ret[(i*4)+0] = b
 		ret[(i*4)+1] = c
@@ -30,9 +33,8 @@ func rollsum(data []byte) uint32 {
 	return (A & 0xffff) | ((B & 0xffff) << 16)
 }
 
-func encode_seed(seed uint64) []byte {
-	ret := make([]byte, SEED_BYTES)
-	for i := uint(0); i < SEED_BYTES; i++ {
+func encode_seed(seed uint64) (ret [HASH_TRUNC]byte) {
+	for i := uint(0); i < HASH_TRUNC; i++ {
 		ret[i] = byte((seed >> (i * 8)) & 0xff)
 	}
 	return ret

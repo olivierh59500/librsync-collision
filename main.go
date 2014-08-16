@@ -28,8 +28,7 @@ func main() {
 		fmt.Println("Unable to create coll1.bin:", err)
 		return
 	}
-	file1.Write(prefix1)
-	file1.Write(rollsum_expand(result.Seed1))
+	file1.Write(result.Plaintext1)
 	file1.Close()
 
 	file2, err := os.Create("coll2.bin")
@@ -37,7 +36,6 @@ func main() {
 		fmt.Println("Unable to create coll2.bin:", err)
 		return
 	}
-	file2.Write(prefix2)
-	file2.Write(rollsum_expand(result.Seed2))
+	file2.Write(result.Plaintext2)
 	file2.Close()
 }

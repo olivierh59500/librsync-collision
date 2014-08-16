@@ -1,22 +1,18 @@
 package main
 
-import (
-	"bytes"
-	"fmt"
-)
-
-func verify_collisions(prefix []byte, verify_chan <-chan Candidate, result_chan chan<- Result) {
-	h := PrepareHash(prefix)
-
-	var count uint64
+func verify_collisions(prefix1 []byte, prefix2 []byte, verify_chan <-chan Candidate, result_chan chan<- Result) {
 	for candidate := range verify_chan {
-		suffix := rollsum_expand(candidate.Seed)
-		digest := truncate_hash(h.Hash(suffix))
-		if bytes.Equal(digest, candidate.Hash.Digest) {
-			result_chan <- Result{candidate.Seed, candidate.Hash.Seed}
-		}
-		if count++; count%REPORT_INTERVAL == 0 {
-			send_status(fmt.Sprintf("Tested %d hashes", count))
+		send_status("Verifying collision...")
+		digest1, digest2, ok := recreate_collision(prefix1, prefix2, candidate)
+		if ok {
+			send_status("Got result")
+			result_chan <- MakeResult(prefix1, prefix2, digest1, digest2)
 		}
 	}
+}
+
+func MakeResult(prefix1, prefix2 []byte, digest1 [HASH_TRUNC]byte, digest2 [HASH_TRUNC]byte) Result {
+	result1 := append(prefix1, rollsum_encode(digest1)...)
+	result2 := append(prefix2, rollsum_encode(digest2)...)
+	return Result{result1, result2}
 }
