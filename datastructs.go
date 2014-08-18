@@ -18,6 +18,6 @@ type DigestSeed struct {
 }
 
 type Candidate struct {
-	Seed uint64
-	Hash DigestSeed
+	Seed1 uint64
+	Seed2 uint64
 }

@@ -14,7 +14,7 @@ func PrepareHash(prefix []byte) PreparedHash {
 	return ret
 }
 
-func (self *PreparedHash) Hash(data [HASH_TRUNC]byte) [HASH_TRUNC]byte {
+func (self PreparedHash) Hash(data [HASH_TRUNC]byte) [HASH_TRUNC]byte {
 	ctx := self.CtxTemplate.Copy()
 	ctx.Write(rollsum_encode(data))
 	return truncate_hash(ctx.Sum(nil))
@@ -30,21 +30,21 @@ func is_distinguished(digest [HASH_TRUNC]byte) bool {
 }
 
 type Digester struct {
-	H1       PreparedHash
-	H2       PreparedHash
+	Hashes   []PreparedHash
 	FlagByte int
 	FlagMask byte
 }
 
-func (self *Digester) Hash(data [HASH_TRUNC]byte) [HASH_TRUNC]byte {
-	if data[self.FlagByte]&self.FlagMask == 0 {
-		return self.H1.Hash(data)
-	} else {
-		return self.H2.Hash(data)
-	}
+func NewDigester(flagByte int, flagMask byte, hashes ...PreparedHash) Digester {
+	return Digester{hashes, flagByte, flagMask}
 }
 
-func (self *Digester) WhichPrefix(data [HASH_TRUNC]byte) int {
+func (self Digester) Hash(data [HASH_TRUNC]byte) [HASH_TRUNC]byte {
+	prefix := self.WhichPrefix(data)
+	return self.Hashes[prefix].Hash(data)
+}
+
+func (self Digester) WhichPrefix(data [HASH_TRUNC]byte) int {
 	if data[self.FlagByte]&self.FlagMask == 0 {
 		return 0
 	} else {
@@ -53,7 +53,7 @@ func (self *Digester) WhichPrefix(data [HASH_TRUNC]byte) int {
 }
 
 func generate_hashes(prefix1 []byte, prefix2 []byte, start uint64, stop uint64, step uint64, out_chans []chan DigestSeed) {
-	h := Digester{PrepareHash(prefix1), PrepareHash(prefix2), LEADING_ZEROS, 128}
+	h := NewDigester(LEADING_ZEROS, 128, PrepareHash(prefix1), PrepareHash(prefix2))
 
 	for i := start; i < stop; i += step {
 		seed := encode_seed(i)
@@ -69,9 +69,9 @@ func generate_hashes(prefix1 []byte, prefix2 []byte, start uint64, stop uint64, 
 func recreate_collision(prefix1 []byte, prefix2 []byte, candidate Candidate) ([HASH_TRUNC]byte, [HASH_TRUNC]byte, bool) {
 	htable := make(map[[HASH_TRUNC]byte][HASH_TRUNC]byte)
 
-	h := Digester{PrepareHash(prefix1), PrepareHash(prefix2), LEADING_ZEROS, 128}
+	h := NewDigester(LEADING_ZEROS, 128, PrepareHash(prefix1), PrepareHash(prefix2))
 
-	prev := encode_seed(candidate.Seed)
+	prev := encode_seed(candidate.Seed1)
 	for {
 		digest := h.Hash(prev)
 		htable[digest], prev = prev, digest
@@ -80,7 +80,7 @@ func recreate_collision(prefix1 []byte, prefix2 []byte, candidate Candidate) ([H
 		}
 	}
 
-	prev = encode_seed(candidate.Hash.Seed)
+	prev = encode_seed(candidate.Seed2)
 	for {
 		digest := h.Hash(prev)
 		collision, ok := htable[digest]

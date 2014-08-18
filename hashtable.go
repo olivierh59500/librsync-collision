@@ -13,7 +13,7 @@ func start_storage_proc(inchan <-chan DigestSeed, verify_chan chan<- Candidate) 
 	for data := range inchan {
 		collision, ok := htable[data.Digest]
 		if ok {
-			verify_chan <- Candidate{collision, data}
+			verify_chan <- Candidate{collision, data.Seed}
 		} else {
 			htable[data.Digest] = data.Seed
 		}
