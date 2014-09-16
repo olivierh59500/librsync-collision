@@ -6,7 +6,7 @@ const (
 	STORE_PROCS     = 2
 	GENERATE_PROCS  = 8
 	VERIFY_PROCS    = 1
-	NUM_BUCKETS     = (WORKFACTOR / STORE_PROCS) // Keep the table dense, even if we lose some keys
+	NUM_BUCKETS     = (1 << 17) // Don't waste too much memory, but big enough to hold our dataset easily
 	SEED_BYTES      = HASH_TRUNC
 	REPORT_INTERVAL = 1024
 	LEADING_ZEROS   = 2
